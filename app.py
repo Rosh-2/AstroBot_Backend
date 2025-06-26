@@ -1,4 +1,5 @@
 import os
+from threading import Thread
 import PyPDF2
 import faiss
 import numpy as np
@@ -354,6 +355,11 @@ if __name__ == '__main__':
         chunks = []
         index = None
     app.run(host='0.0.0.0', port=int(os.getenv('PORT', 5000)))
-    
+else:
+    # This runs when started by Gunicorn on Render
+    gunicorn_port = int(os.environ.get("PORT", 10000))
+    def run_app():
+        app.run(host='0.0.0.0', port=gunicorn_port)
+    Thread(target=run_app).start()
     
     
