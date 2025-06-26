@@ -20,10 +20,19 @@ if not together_api_key:
     raise ValueError("TOGETHER_API_KEY not set in environment variables")
 client = Together(api_key=together_api_key)
 
-#http://localhost:5173
 # Initialize Flask app
 app = Flask(__name__)
-CORS(app, resources={r"/query": {"origins": ["http://localhost:5173"]}})  # Allow frontend origin
+# Updated CORS configuration
+CORS(app, resources={
+    r"/query": {
+        "origins": [
+            "https://astrobot-frontend-h0zs.onrender.com",
+            "http://localhost:5173"
+        ],
+        "methods": ["POST"],
+        "allow_headers": ["Content-Type"]
+    }
+})
 
 # Global variables for RAG components
 index = None
@@ -326,6 +335,25 @@ def handle_query():
     response_chunks = generate_response(query, relevant_chunks)
     return jsonify({"response": response_chunks})
 
+@app.route('/health', methods=['GET'])
+def health_check():
+    return jsonify({
+        "status": "healthy",
+        "rag_initialized": index is not None,
+        "chunks_loaded": len(chunks) if chunks else 0,
+        "service": "AstroBot Backend",
+        "version": "1.0"
+    })
+
 # Run the server
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    try:
+        initialize_rag()
+    except Exception as e:
+        print(f"Failed to initialize RAG: {e}")
+        chunks = []
+        index = None
+    app.run(host='0.0.0.0', port=int(os.getenv('PORT', 5000)))
+    
+    
+    
